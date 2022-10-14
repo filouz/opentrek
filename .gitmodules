@@ -1,0 +1,3 @@
+[submodule "tegola/src"]
+	path = tegola/src
+	url = https://github.com/filouz/tegola

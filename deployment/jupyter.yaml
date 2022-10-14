@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jupyter
+  namespace: opentrek
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jupyter
+  template:
+    metadata:
+      labels:
+        app: jupyter
+    spec:
+      containers:
+      - name: jupyter
+        image: jupyter/base-notebook
+        args: ["start-notebook.sh", "--no-browser", "--ServerApp.allow_origin='*'", "--ip='0.0.0.0'", "--port=8080"]
+        ports:
+        - containerPort: 8080
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: jupyter
+  namespace: coreader
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 48081
+    targetPort: 8080
+  selector:
+    app: jupyter

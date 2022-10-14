@@ -1,0 +1,44 @@
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgis
+  namespace: opentrek
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgis
+  template:
+    metadata:
+      labels:
+        app: postgis
+    spec:
+      containers:
+      - name: postgis
+        image: postgis/postgis:13-3.1-alpine
+        ports:
+        - containerPort: 5432
+        env:
+        - name: POSTGRES_USER
+          value: postgres
+        - name: POSTGRES_PASSWORD
+          value: postgres
+        - name: POSTGRES_DB
+          value: pocdb
+        - name: POSTGRES_HOST_AUTH_METHOD
+          value: trust
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgis
+  namespace: opentrek
+spec:
+  selector:
+    app: postgis
+  ports:
+  - protocol: TCP
+    port: 5432
+    targetPort: 5432

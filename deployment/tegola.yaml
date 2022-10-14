@@ -1,0 +1,90 @@
+
+      
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tegola
+  namespace: opentrek
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tegola
+  template:
+    metadata:
+      labels:
+        app: tegola
+    spec:
+      imagePullSecrets:
+      - name: regcred
+      containers:
+      - name: tegola
+        image: ghcr.io/filouz/tegola:local
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+        env:
+        - name: DB_HOST
+          value: postgis
+        - name: DB_PORT
+          value: "5432"
+        - name: DB_NAME
+          value: pocdb
+        - name: DB_USER
+          value: postgres
+        - name: DB_PASSWORD
+          value: postgres
+        - name: TEGOLA_POSTGIS_SSL
+          value: disable
+        - name: TEGOLA_REDIS_SSL
+          value: "false"
+        - name: REDIS_HOST
+          value: redis:6379
+        - name: REDIS_PASSWORD
+          value: ""
+        - name: TEGOLA_SQL_DEBUG
+          value: LAYER_SQL
+        args: ["serve", "--config", "/data/config-mvt-postgis.toml"]
+        volumeMounts:
+        - name: tegola-volume
+          mountPath: /data
+          subPath: tegola
+      volumes:
+      - name: tegola-volume
+        persistentVolumeClaim:
+          claimName: opentrek-pvc
+        
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tegola
+  namespace: opentrek
+spec:
+  selector:
+    app: tegola
+  ports:
+  - protocol: TCP
+    port: 8080
+    targetPort: 8080
+
+---
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: tegola-ingress
+  namespace: opentrek
+spec:
+  rules:
+  - host: opentrek.dev.example.com
+    http:
+      paths:
+      - pathType: Prefix
+        path: "/tegola"
+        backend:
+          service:
+            name: tegola
+            port:
+              number: 8080

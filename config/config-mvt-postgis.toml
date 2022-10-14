@@ -1,0 +1,49 @@
+[webserver]
+port = ":8080"
+uri_prefix = "/tegola"
+
+[webserver.headers]
+Cache-Control = "s-maxage=3600"
+
+[cache]
+type = "redis"
+address = "${REDIS_HOST}"
+password = "${REDIS_PASSWORD}"
+ttl = 10
+max_zoom = 18
+ssl = "${TEGOLA_REDIS_SSL}"
+db = 1
+
+[[providers]]
+name = "poc_provider"
+type = "postgis"
+uri = "postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}?sslmode=${TEGOLA_POSTGIS_SSL}" 
+srid = 4326
+
+  [[providers.layers]]
+  name = "track_lines"
+  id_fieldname = "gid"
+  geometry_fieldname = "geom"
+  geometry_type="LineString"
+  tablename = "track.route_lines"
+
+  [[providers.layers]]
+  name = "track_points"
+  id_fieldname = "gid"
+  geometry_fieldname = "geom"
+  geometry_type="point"
+  tablename = "track.route_lines"
+
+
+[[maps]]
+name = "poc_map"
+
+  [[maps.layers]]
+  provider_layer = "poc_provider.track_lines" 
+  min_zoom = 0 
+  max_zoom = 20
+
+  [[maps.layers]]
+  provider_layer = "poc_provider.track_points" 
+  min_zoom = 0 
+  max_zoom = 20

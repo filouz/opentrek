@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+      }
+
+      #map {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 100%;
+      }
+    </style>
+    <link
+      href="https://api.mapbox.com/mapbox-gl-js/v2.11.0/mapbox-gl.css"
+      rel="stylesheet"
+    />
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.11.0/mapbox-gl.js"></script>
+    <title>Opentrek</title>
+  </head>
+  <body>
+    <div id="map"></div>
+    <script type="text/javascript">
+      // TODO: Enter your mapbox gl access token on the line below
+      mapboxgl.accessToken =
+        "pk.eyJ1IjoiZW1pdGFoZSIsImEiOiJjbGlqN2tnM2EwNWZxM2NvNWNyNHBoNGhmIn0.0ifNFs4g-ztuEmyn7LSD5A";
+      var map = new mapboxgl.Map({
+        container: "map",
+        style: "mapbox://styles/mapbox/light-v9",
+        center: [2.1471448171970304, 48.71479209832368],
+        zoom: 15,
+      });
+
+      // Fetch capabilities from Tegola server
+      fetch("http://opentrek.dev.example.com/tegola/capabilities")
+        .then((response) => response.json())
+        .then((capabilities) => {
+          // Extract the maps array from the capabilities
+          const maps = capabilities.maps;
+
+          // For each map
+          maps.forEach((mapItem) => {
+            const mapName = mapItem.name;
+
+            // Fetch map capabilities
+            fetch(`${mapItem.capabilities}`)
+              .then((mapResponse) => mapResponse.json())
+              .then((mapCapabilities) => {
+                // Add source for this map
+                map.addSource(mapName, {
+                  type: "vector",
+                  tiles: [
+                    `http://opentrek.dev.example.com/tegola/maps/${mapName}/{z}/{x}/{y}.vector.pbf`,
+                  ],
+                });
+
+                // For each layer in the map
+                mapCapabilities.vector_layers.forEach((layer) => {
+                  const layerName = layer.name;
+
+                  console.log("layer", layer)
+
+                  // Add layer
+                  map.addLayer({
+                    id: layerName,
+                    type: getLayerType(layer.geometry_type),
+                    source: mapName,
+                    "source-layer": layerName,
+                    paint: getPaintProperties(layer.geometry_type),
+                    minzoom: 14,
+                  });
+
+                });
+              });
+          });
+        });
+
+      // Function to determine layer type based on geometry type
+      function getLayerType(geomType) {
+        switch (geomType.toLocaleLowerCase()) {
+          case "point":
+          case "multipoint":
+            return "circle";
+          case "line":
+          case "multilinestring":
+            return "line";
+          case "polygon":
+          case "multipolygon":
+            return "fill";
+          default:
+            console.error("Unknown geometry type: " + geomType);
+            return "circle";
+        }
+      }
+
+      // Function to return default paint properties for each geometry type
+      function getPaintProperties(geomType) {
+
+
+        switch (geomType.toLocaleLowerCase()) {
+          case "point":
+          case "multipoint":
+            return { 
+              "circle-color": "red",
+              "circle-radius": 4,
+            };
+          case "line":
+          case "multilinestring":
+            return { 
+              "line-color": "green" ,
+              "line-width": 4,
+            };
+          case "polygon":
+          case "multipolygon":
+            return { "fill-color": "green" };
+          default:
+            console.error("Unknown geometry type: " + geomType);
+            return {};
+        }
+      }
+    </script>
+  </body>
+</html>
